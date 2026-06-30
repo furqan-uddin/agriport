@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand-50: #eaf6f0;
+  --brand-100: #cdeadd;
+  --brand-500: #1c7c58;
+  --brand-600: #15694a;
+  --brand-700: #11543b;
+  --brand-800: #0e432f;
+  --brand-900: #0a3324;
+  --ink-50: #f6f7f9;
+  --ink-100: #edeff3;
+  --ink-200: #e2e6ec;
+  --ink-300: #cbd2dc;
+  --ink-500: #6b7585;
+  --ink-700: #3a4250;
+  --ink-900: #161b24;
+  --surface: #ffffff;
+  --app-bg: #f4f6f8;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  background-color: var(--app-bg);
+  color: var(--ink-900);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Subtle dotted texture for the app background — atmosphere, not noise. */
+.app-canvas {
+  background-color: var(--app-bg);
+  background-image: radial-gradient(rgba(22, 27, 36, 0.035) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/* Tabular figures for money/quantities */
+.tnum {
+  font-feature-settings: 'tnum' 1;
+  font-variant-numeric: tabular-nums;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--ink-300);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-500);
+  background-clip: content-box;
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up {
+    animation: none;
+  }
+}
