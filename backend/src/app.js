@@ -43,7 +43,7 @@ app.use(
 // 2. CORS Config
 const whitelist = [
   "https://agriport.vercel.app", // Production
-  "https://agriport-pi.vercel.app",
+  "https://agriport-c6fh.vercel.app/",
   "http://localhost:5173", // Local Dev
   "http://localhost:3000",
 ];
