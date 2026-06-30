@@ -43,7 +43,7 @@ app.use(
 // 2. CORS Config
 const whitelist = [
   "https://agriport.vercel.app", // Production
-  "https://agriport-c6fh.vercel.app/",
+  "https://agriport-c6fh.vercel.app", // Added without trailing slash
   "http://localhost:5173", // Local Dev
   "http://localhost:3000",
 ];
@@ -52,7 +52,8 @@ app.use(
   cors({
     origin: (origin, callback) => {
       // Allow requests with no origin (like mobile apps, curl, or postman)
-      if (!origin || whitelist.indexOf(origin) !== -1) {
+      const isVercelDomain = origin && (origin.endsWith(".vercel.app") || origin === "https://agriport.vercel.app");
+      if (!origin || whitelist.indexOf(origin) !== -1 || isVercelDomain) {
         callback(null, true);
       } else {
         callback(new AppError("Not allowed by CORS", 403));
