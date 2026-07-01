@@ -45,6 +45,7 @@ export interface Product {
   id: string
   sku?: string
   name: string
+  brand?: string             // top-level brand field
   category: string
   images: string[]
   shortDescription: string
@@ -105,6 +106,8 @@ export interface OrderLine {
   unitPrice: number
   lineTotal: number
   specifications?: Record<string, string>
+  variantSize?: string          // which size variant was ordered
+  variantPackingType?: string   // which packing type variant was ordered
 }
 
 export interface Order {
@@ -235,6 +238,10 @@ export interface StockRequest {
   requestedOn: string
   status: 'pending' | 'approved' | 'rejected'
   notes?: string
+  sizeVariants?: SizeVariant[]
+  specifications?: Record<string, string>
+  origin?: string
+  leadTimeDays?: number
 }
 
 export interface DashboardStats {
@@ -322,6 +329,7 @@ export interface VendorPurchase {
   id: string
   vendor: string
   product: string
+  brand?: string
   quantity: number
   unit: string
   buyPrice: number
@@ -330,12 +338,17 @@ export interface VendorPurchase {
   status: 'received' | 'pending' | 'ordered'
   purchaser?: string
   notes?: string
+  sizeVariants?: SizeVariant[]
+  specifications?: Record<string, string>
+  origin?: string
+  leadTimeDays?: number
 }
 
 export interface PurchaseDraft {
   vendorName: string
   productId: string
   productName: string
+  brand?: string
   quantity: number
   unit: string
   buyPrice: number
@@ -370,6 +383,8 @@ export interface SaleItemDraft {
   quantity: number
   unit: string
   unitPrice: number
+  variantSize?: string           // which size variant is being sold
+  variantPackingType?: string    // which packing type is being sold
 }
 
 export interface SaleDraft {

@@ -89,13 +89,14 @@ export const getProductById = asyncWrapper(async (req, res, next) => {
 
 // 3. Create product (Admin only)
 export const createProduct = asyncWrapper(async (req, res, next) => {
-  const { name, category, origin, grade } = req.body;
+  const { name, category, origin, grade, brand } = req.body;
 
   const product = await Product.create({
     name,
     category,
     origin,
     grade,
+    brand: brand || '',
     isExecutiveOnly: false, // Set to false so it is public by default
   });
 
@@ -106,7 +107,7 @@ export const createProduct = asyncWrapper(async (req, res, next) => {
 // 4. Update product (Admin only)
 export const updateProduct = asyncWrapper(async (req, res, next) => {
   const { id } = req.params;
-  const { name, category, origin, grade } = req.body;
+  const { name, category, origin, grade, brand } = req.body;
 
   const product = await Product.findById(id);
   if (!product) {
@@ -117,6 +118,7 @@ export const updateProduct = asyncWrapper(async (req, res, next) => {
   if (category) product.category = category;
   if (origin) product.origin = origin;
   if (grade) product.grade = grade;
+  if (brand !== undefined) product.brand = brand;
 
   await product.save();
 

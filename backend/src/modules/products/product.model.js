@@ -15,6 +15,12 @@ const productSchema = new mongoose.Schema(
       uppercase: true,
       trim: true,
     },
+    brand: {
+      type: String,
+      default: '',
+      trim: true,
+      index: true,
+    },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
@@ -40,7 +46,7 @@ const productSchema = new mongoose.Schema(
     unit: {
       type: String,
       required: true,
-      default: 'kg',
+      default: 'pcs',
     },
     isExecutiveOnly: {
       type: Boolean,
@@ -104,10 +110,20 @@ productSchema.pre('validate', function() {
   }
 });
 
+// Pre-save hook: keep product.stock in sync as sum of all sizeVariant carton counts
+productSchema.pre('save', function() {
+  if (this.sizeVariants && this.sizeVariants.length > 0) {
+    this.stock = this.sizeVariants.reduce((sum, v) => sum + (v.stock || 0), 0);
+  }
+  // Auto-update status based on stock
+  this.status = this.stock > 0 ? 'in_stock' : 'out_of_stock';
+});
+
 // Indexes
 productSchema.index({ name: 'text' });
 productSchema.index({ category: 1 });
 productSchema.index({ isExecutiveOnly: 1 });
+productSchema.index({ brand: 1 });
 
 const Product = mongoose.model('Product', productSchema);
 

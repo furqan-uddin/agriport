@@ -21,8 +21,6 @@ type SortKey = NonNullable<ProductQuery['sort']>
 
 const SORTS: { value: SortKey; label: string }[] = [
   { value: 'relevance', label: 'Relevance' },
-  { value: 'price_asc', label: 'Price: Low → High' },
-  { value: 'price_desc', label: 'Price: High → Low' },
   { value: 'rating', label: 'Top rated' },
 ]
 

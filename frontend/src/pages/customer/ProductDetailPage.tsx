@@ -197,7 +197,7 @@ export default function ProductDetailPage() {
               <Box className="text-right">
                 <Typography sx={{ fontSize: 11.5, color: 'var(--ink-500)', fontWeight: 600 }}>AVAILABLE</Typography>
                 <Typography className="tnum" sx={{ fontWeight: 700, fontSize: { xs: 13, md: 15 } }}>
-                  {product.availableStock.toLocaleString('en-IN')} {product.unit}
+                  {product.availableStock.toLocaleString('en-IN')} cartons
                 </Typography>
               </Box>
             </Box>
@@ -225,7 +225,7 @@ export default function ProductDetailPage() {
                   >
                     {product.sizeVariants.map((sv) => (
                       <MenuItem key={sv.size} value={sv.size}>
-                        {sv.size} {sv.netWeight ? `(Net: ${sv.netWeight} kg / Gross: ${sv.grossWeight} kg)` : ''} — ₹{sv.price}
+                        {sv.size}{sv.packingType ? ` · ${sv.packingType}` : ''}{sv.netWeight ? ` (Net: ${sv.netWeight}kg)` : ''}
                       </MenuItem>
                     ))}
                   </TextField>
@@ -253,7 +253,7 @@ export default function ProductDetailPage() {
               </Box>
               <Box>
                 <Typography sx={{ fontSize: 11.5, color: 'var(--ink-500)', fontWeight: 600, mb: 0.5 }}>
-                  QUANTITY
+                  QUANTITY (CARTONS)
                 </Typography>
                 <QuantityStepper
                   value={effectiveQty}

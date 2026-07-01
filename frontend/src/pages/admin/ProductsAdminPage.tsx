@@ -58,6 +58,7 @@ export default function ProductsAdminPage() {
       category: catDoc.id, // Mongoose ObjectId
       origin: product.origin,
       grade: product.specifications.Grade,
+      brand: product.brand || '',
     }
 
     try {
@@ -96,6 +97,12 @@ export default function ProductsAdminPage() {
           {params.row.name}
         </Typography>
       ),
+    },
+    {
+      field: 'brand',
+      headerName: 'Brand',
+      width: 140,
+      renderCell: (params) => <span style={{ display: 'flex', alignItems: 'center', height: '100%' }}>{params.row.brand || '—'}</span>,
     },
     {
       field: 'category',

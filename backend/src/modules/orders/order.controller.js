@@ -144,6 +144,29 @@ export const createOrder = asyncWrapper(async (req, res, next) => {
             400
           );
         }
+
+        // Also decrement the specific sizeVariant.stock if variant info provided
+        if (item.variantSize) {
+          const freshProduct = session
+            ? await Product.findById(item.productId).session(session)
+            : await Product.findById(item.productId);
+          if (freshProduct) {
+            const variant = freshProduct.sizeVariants.find(
+              (v) => v.size === item.variantSize &&
+                (v.packingType || 'Cartoon') === (item.variantPackingType || 'Cartoon')
+            );
+            if (variant) {
+              variant.stock = Math.max(0, (variant.stock || 0) - quantity);
+              // Use updateOne to avoid re-triggering stock sum in pre-save
+              // We skip the pre-save hook by using findByIdAndUpdate with $set on specific variant
+              await Product.updateOne(
+                { _id: freshProduct._id, 'sizeVariants._id': variant._id },
+                { $set: { 'sizeVariants.$.stock': variant.stock } },
+                session ? { session } : {}
+              );
+            }
+          }
+        }
       }
 
       // Resolve pricing: check for staff quoted price first, then fall back to lot priceSlabs if present
@@ -165,10 +188,12 @@ export const createOrder = asyncWrapper(async (req, res, next) => {
         name: product.name,
         image: '',
         quantity,
-        unit: product.unit || 'kg',
+        unit: product.unit || 'pcs',
         unitPrice,
         lineTotal,
         specifications: item.specifications || {},
+        variantSize: item.variantSize || '',
+        variantPackingType: item.variantPackingType || '',
       });
 
       subtotal += lineTotal;
@@ -393,11 +418,21 @@ export const updateOrderStatus = asyncWrapper(async (req, res, next) => {
   } else if (status === 'cancelled') {
     order.cancellationReason = reason || 'Cancelled by Admin';
 
-    // Restore stock levels for each product in the order
+    // Restore flat stock levels for each product in the order
     for (const line of order.lines) {
       const product = await Product.findById(line.productId);
       if (product) {
         product.stock += line.quantity;
+        // Also restore specific variant stock if variant info present
+        if (line.variantSize) {
+          const variant = product.sizeVariants.find(
+            (v) => v.size === line.variantSize &&
+              (v.packingType || 'Cartoon') === (line.variantPackingType || 'Cartoon')
+          );
+          if (variant) {
+            variant.stock = (variant.stock || 0) + line.quantity;
+          }
+        }
         await product.save();
       }
     }
@@ -527,6 +562,16 @@ export const quoteOrder = asyncWrapper(async (req, res, next) => {
           return next(new AppError(`Insufficient stock for "${product.name}". Available: ${product.stock || 0}, Requested: ${line.quantity}`, 400));
         }
         product.stock -= line.quantity;
+        // Also decrement specific variant stock if variant info is present
+        if (line.variantSize) {
+          const variant = product.sizeVariants.find(
+            (v) => v.size === line.variantSize &&
+              (v.packingType || 'Cartoon') === (line.variantPackingType || 'Cartoon')
+          );
+          if (variant) {
+            variant.stock = Math.max(0, (variant.stock || 0) - line.quantity);
+          }
+        }
         await product.save();
       }
     }
@@ -570,6 +615,16 @@ export const quoteOrder = asyncWrapper(async (req, res, next) => {
         const product = await Product.findById(line.productId);
         if (product) {
           product.stock += line.quantity;
+          // Also restore specific variant stock
+          if (line.variantSize) {
+            const variant = product.sizeVariants.find(
+              (v) => v.size === line.variantSize &&
+                (v.packingType || 'Cartoon') === (line.variantPackingType || 'Cartoon')
+            );
+            if (variant) {
+              variant.stock = (variant.stock || 0) + line.quantity;
+            }
+          }
           await product.save();
         }
       }

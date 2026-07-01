@@ -71,6 +71,7 @@ export default function ExecutiveProductsPage() {
           <TableHead>
             <TableRow sx={{ bgcolor: 'var(--ink-50)', '& th': { fontWeight: 700, fontSize: 12, color: 'var(--ink-600)', letterSpacing: '0.04em', textTransform: 'uppercase', borderColor: 'var(--ink-200)' } }}>
               <TableCell>Product Name</TableCell>
+              <TableCell>Brand</TableCell>
               <TableCell>Category</TableCell>
               <TableCell>Origin</TableCell>
               <TableCell>Grade</TableCell>
@@ -96,14 +97,17 @@ export default function ExecutiveProductsPage() {
                   <TableCell>
                     <Typography sx={{ fontWeight: 600, fontSize: 13.5, lineHeight: 1.3 }}>{p.name}</Typography>
                   </TableCell>
+                  <TableCell sx={{ fontSize: 13, color: 'var(--ink-600)' }}>{p.brand || '—'}</TableCell>
                   <TableCell sx={{ fontSize: 13 }}>{p.category}</TableCell>
                   <TableCell sx={{ fontSize: 13 }}>{p.origin}</TableCell>
                   <TableCell sx={{ fontSize: 13, fontWeight: 600 }}>{p.specifications?.Grade || 'Premium'}</TableCell>
                   <TableCell sx={{ fontSize: 13, color: 'var(--ink-600)' }}>
-                    {p.specifications?.['Packing Type'] || 'Cartoon'} ({p.specifications?.['Size or Count'] || '-'})
+                    {p.sizeVariants && p.sizeVariants.length > 0
+                      ? p.sizeVariants.map(v => `${v.size} (${v.packingType || 'Cartoon'})`).join(', ')
+                      : p.specifications?.['Size or Count'] || '—'}
                   </TableCell>
                   <TableCell sx={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-700)' }}>
-                    {p.availableStock?.toLocaleString('en-IN')} {p.unit}
+                    {p.availableStock?.toLocaleString('en-IN')} cartons
                   </TableCell>
                 </TableRow>
               ))
@@ -155,12 +159,13 @@ export default function ExecutiveProductsPage() {
                 <Box>
                   <Typography sx={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', color: 'var(--ink-400)', letterSpacing: '0.06em', mb: 0.5 }}>Product Specifications</Typography>
                   <DetailRow label="Product Name" value={detailProduct.name} />
+                  {detailProduct.brand && <DetailRow label="Brand" value={detailProduct.brand} />}
                   <DetailRow label="Category" value={detailProduct.category} />
                   <DetailRow label="Origin" value={detailProduct.origin} />
                   <DetailRow label="Grade" value={detailProduct.specifications?.Grade || 'Premium'} />
                   <DetailRow label="Packing Type" value={detailProduct.specifications?.['Packing Type'] || 'Cartoon'} />
-                  <DetailRow label="Sizes" value={detailProduct.specifications?.['Size or Count'] || '-'} />
-                  <DetailRow label="Available Stock" value={`${detailProduct.availableStock?.toLocaleString('en-IN')} ${detailProduct.unit}`} />
+                  <DetailRow label="Sizes" value={detailProduct.sizeVariants && detailProduct.sizeVariants.length > 0 ? detailProduct.sizeVariants.map(v => `${v.size} (${v.packingType || 'Cartoon'})`).join(', ') : detailProduct.specifications?.['Size or Count'] || '—'} />
+                  <DetailRow label="Available Stock" value={`${detailProduct.availableStock?.toLocaleString('en-IN')} cartons`} />
                 </Box>
               </Box>
             </Box>

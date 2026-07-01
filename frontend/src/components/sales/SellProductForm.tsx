@@ -547,6 +547,7 @@ export default function SellProductForm({
                   const res = await createVendorPurchase({
                     vendorName: purchaseDraft.vendorName,
                     productId: purchaseDraft.productId,
+                    brand: purchaseDraft.brand,
                     quantity: purchaseDraft.quantity,
                     unit: purchaseDraft.unit,
                     buyPrice: purchaseDraft.buyPrice,
@@ -716,6 +717,8 @@ export default function SellProductForm({
                       productId: item.productId,
                       quantity: item.quantity,
                       unit: item.unit,
+                      variantSize: item.variantSize || '',
+                      variantPackingType: item.variantPackingType || '',
                     })),
                     paymentMode,
                     deliveryAddress,

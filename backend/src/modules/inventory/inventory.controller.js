@@ -9,7 +9,9 @@ import { successResponse } from '../../utils/apiResponse.js';
 import eventBus from '../../events/index.js';
 
 // Helper to update product stock, size variants, specifications, origin, images and leadTimeDays
-const updateProductStockAndDetails = async (productId, { stockChange, type, sizeVariants, specifications, images, origin, leadTimeDays }, session) => {
+// NOTE: stockChange is now the CARTON COUNT (not kg weight).
+// product.stock is automatically recomputed from sizeVariants sum by the Product pre-save hook.
+const updateProductStockAndDetails = async (productId, { type, sizeVariants, specifications, images, origin, leadTimeDays }, session) => {
   const queryOpts = session ? { session } : {};
   const product = session
     ? await Product.findById(productId).session(session)
@@ -18,20 +20,7 @@ const updateProductStockAndDetails = async (productId, { stockChange, type, size
     throw new AppError('Product associated with this stock request/purchase not found.', 404);
   }
 
-  // 1. Update stock
-  if (type === 'add') {
-    product.stock = (product.stock || 0) + stockChange;
-  } else if (type === 'update' || type === 'new_product') {
-    product.stock = stockChange;
-  } else {
-    throw new AppError('Invalid update type.', 400);
-  }
-
-  if (product.stock < 0) {
-    throw new AppError('Stock operation would result in negative product stock.', 400);
-  }
-
-  // 2. Update sizeVariants
+  // 1. Update sizeVariants
   if (sizeVariants && sizeVariants.length > 0) {
     if (type === 'add') {
       product.sizeVariants = product.sizeVariants || [];
@@ -40,6 +29,7 @@ const updateProductStockAndDetails = async (productId, { stockChange, type, size
           (v) => v.size === newVar.size && (v.packingType || 'Cartoon') === (newVar.packingType || 'Cartoon')
         );
         if (existingVar) {
+          // Add carton counts
           existingVar.stock = (existingVar.stock || 0) + newVar.stock;
           if (newVar.price) existingVar.price = newVar.price;
           if (newVar.netWeight) existingVar.netWeight = newVar.netWeight;
@@ -49,7 +39,18 @@ const updateProductStockAndDetails = async (productId, { stockChange, type, size
         }
       }
     } else {
+      // For update/new_product, replace variants entirely
       product.sizeVariants = sizeVariants;
+    }
+  } else if (type === 'new_product') {
+    product.sizeVariants = [];
+  }
+
+  // 2. product.stock is auto-recomputed in pre-save hook from sizeVariants sum
+  //    But for products with no sizeVariants (legacy), handle gracefully:
+  if (!product.sizeVariants || product.sizeVariants.length === 0) {
+    if (type === 'update' || type === 'new_product') {
+      product.stock = 0;
     }
   }
 
@@ -164,11 +165,10 @@ export const updateStockRequestStatus = asyncWrapper(async (req, res, next) => {
       return successResponse(res, stockRequest, 200, 'Stock request rejected successfully.');
     }
 
-    // If approved:
+    // If approved: update product stock and details
     const product = await updateProductStockAndDetails(
       stockRequest.productId,
       {
-        stockChange: stockRequest.requestedChange,
         type: stockRequest.type,
         sizeVariants: stockRequest.sizeVariants,
         specifications: stockRequest.specifications,
@@ -223,6 +223,7 @@ export const createStockRequest = asyncWrapper(async (req, res, next) => {
     return next(new AppError('Product not found.', 404));
   }
 
+  // requestedChange is now the CARTON COUNT = sum of all variant stock counts
   const stockRequest = await StockRequest.create({
     productId,
     productName: product.name,
@@ -275,10 +276,23 @@ export const getVendorPurchases = asyncWrapper(async (req, res) => {
 
 // 5. Create a new vendor purchase (Executive/Manager only)
 export const createVendorPurchase = asyncWrapper(async (req, res, next) => {
-  const { vendorName, productId, quantity, unit, buyPrice, purchaseDate, notes, status, specifications } = req.body;
+  const {
+    vendorName, productId, unit, buyPrice, purchaseDate,
+    notes, status, specifications, sizeVariants, images, origin, leadTimeDays, brand
+  } = req.body;
 
-  if (!vendorName || !productId || !quantity || !buyPrice || !purchaseDate) {
-    return next(new AppError('Vendor name, Product ID, quantity, buy price, and purchase date are required.', 400));
+  if (!vendorName || !productId || !buyPrice || !purchaseDate) {
+    return next(new AppError('Vendor name, Product ID, buy price, and purchase date are required.', 400));
+  }
+
+  if (!sizeVariants || sizeVariants.length === 0) {
+    return next(new AppError('At least one size variant is required.', 400));
+  }
+
+  // Quantity is total carton count across all variants
+  const qty = sizeVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+  if (qty < 1) {
+    return next(new AppError('Total quantity (sum of variant carton counts) must be at least 1.', 400));
   }
 
   let session = null;
@@ -297,7 +311,6 @@ export const createVendorPurchase = asyncWrapper(async (req, res, next) => {
       throw new AppError('Product not found.', 404);
     }
 
-    const qty = Number(quantity);
     const price = Number(buyPrice);
     const total = qty * price;
     const purchaseStatus = status || 'pending';
@@ -307,13 +320,19 @@ export const createVendorPurchase = asyncWrapper(async (req, res, next) => {
       vendorName,
       productId,
       productName: product.name,
+      brand: brand || product.brand || '',
       quantity: qty,
-      unit: unit || product.unit || 'kg',
+      unit: unit || product.unit || 'pcs',
       buyPrice: price,
       total,
       purchaseDate: new Date(purchaseDate),
       status: purchaseStatus,
       notes: notes || '',
+      sizeVariants: sizeVariants || [],
+      specifications: specifications || {},
+      images: images || [],
+      origin: origin || product.origin || '',
+      leadTimeDays: leadTimeDays ? Number(leadTimeDays) : 0,
     };
 
     let purchaseDoc;
@@ -324,28 +343,17 @@ export const createVendorPurchase = asyncWrapper(async (req, res, next) => {
       purchaseDoc = await VendorPurchase.create(purchaseData);
     }
 
-    // Update product images if provided
-    if (req.body.images && req.body.images.length > 0) {
-      const imgUpdateOpts = session ? { session } : {};
-      await Product.findByIdAndUpdate(
-        productId,
-        { $set: { images: req.body.images } },
-        imgUpdateOpts
-      );
-    }
-
-    // If already received, immediately add to stock and update specifications atomically
+    // If already received, immediately update stock and details
     if (purchaseStatus === 'received') {
       await updateProductStockAndDetails(
         productId,
         {
-          stockChange: qty,
           type: 'add',
-          sizeVariants: req.body.sizeVariants,
+          sizeVariants,
           specifications,
-          images: req.body.images,
-          origin: req.body.origin,
-          leadTimeDays: req.body.leadTimeDays,
+          images,
+          origin,
+          leadTimeDays,
         },
         session
       );

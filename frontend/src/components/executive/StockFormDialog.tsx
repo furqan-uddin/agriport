@@ -154,20 +154,14 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
     }
     const currentSizes = form.sizeVariants ?? []
 
-    // Duplicate check
+    // Duplicate check (by size+packingType combination)
     const isDuplicate = currentSizes.some((v, idx) => {
       if (idx === editingSizeIndex) return false
-      return v.size.toLowerCase() === sizeVal.toLowerCase()
+      return v.size.toLowerCase() === sizeVal.toLowerCase() &&
+        (v.packingType || 'Cartoon') === packingTypeInput
     })
     if (isDuplicate) {
-      toast.error('Duplicate sizes are not allowed.')
-      return
-    }
-
-    // Max 6 limit check
-    const sizeCount = currentSizes.filter((_, idx) => idx !== editingSizeIndex).length
-    if (sizeCount >= 6) {
-      toast.error('Maximum 6 size variants allowed.')
+      toast.error('A variant with the same size and packing type already exists.')
       return
     }
 
@@ -285,9 +279,10 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
         return
       }
 
-      const quantity = form.sizeVariants?.reduce((sum, v) => sum + (v.stock * (v.netWeight || 1)), 0) || 0
+      // Quantity = total carton count (NOT weight-based)
+      const quantity = form.sizeVariants?.reduce((sum, v) => sum + v.stock, 0) || 0
       const buyPrice = form.sizeVariants?.[0]?.price || matchedProduct.basePrice || 0
-      const unit = matchedProduct.unit || 'kg'
+      const unit = matchedProduct.unit || 'pcs'
 
       if (quantity <= 0) {
         toast.error('At least one variant with a positive quantity must be added.')
@@ -302,15 +297,17 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
         form.containerOptionFull ? `Full container: ${form.containerOptionFull}` : '',
         form.containerOptionHalf ? `Cold storage: ${form.containerOptionHalf}` : '',
         form.shortDescription ? `Notes: ${form.shortDescription}` : '',
-        form.sizeVariants?.length ? `Variants: ${form.sizeVariants.map(v => `${v.size} (${v.stock} ${v.packingType || 'Cartoon'} · Net: ${v.netWeight || '-'}kg / Gross: ${v.grossWeight || '-'}kg)`).join(', ')}` : '',
+        form.sizeVariants?.length ? `Variants: ${form.sizeVariants.map(v => `${v.size} (${v.stock} ${v.packingType || 'Cartoon'}${v.netWeight ? ` · Net: ${v.netWeight}kg` : ''})`).join(', ')}` : '',
       ].filter(Boolean).join(', ')
 
       const finalImages = uploadedImages.filter(Boolean)
+      const brandValue = form.brand || form.specifications?.['Brand Name'] || ''
 
       onSavePurchase?.({
         vendorName,
         productId: matchedProduct.id,
         productName: matchedProduct.name,
+        brand: brandValue,
         quantity,
         unit,
         buyPrice,
@@ -319,7 +316,7 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
         notes,
         specifications: {
           Grade: form.specifications?.Grade || 'Premium',
-          ...(form.specifications?.['Brand Name'] ? { 'Brand Name': form.specifications['Brand Name'] } : {}),
+          ...(brandValue ? { 'Brand Name': brandValue } : {}),
           ...(form.specifications?.['Packing Type'] ? { 'Packing Type': form.specifications['Packing Type'] } : {}),
           ...(form.sizeVariants?.length ? { 'Size or Count': form.sizeVariants.map(v => v.size).join(', ') } : {}),
         },
@@ -343,7 +340,8 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
         return
       }
 
-      const requestedChange = form.sizeVariants?.reduce((sum, v) => sum + (v.stock * (v.netWeight || 1)), 0) || 0
+      // Quantity = total carton count (NOT weight-based)
+      const requestedChange = form.sizeVariants?.reduce((sum, v) => sum + v.stock, 0) || 0
       if (requestedChange <= 0) {
         toast.error('At least one variant with a positive quantity must be added.')
         return
@@ -353,10 +351,11 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
         form.containerOptionFull ? `Full container: ${form.containerOptionFull}` : '',
         form.containerOptionHalf ? `Cold storage: ${form.containerOptionHalf}` : '',
         form.shortDescription ? `Notes: ${form.shortDescription}` : '',
-        form.sizeVariants?.length ? `Variants: ${form.sizeVariants.map(v => `${v.size} (${v.stock} ${v.packingType || 'Cartoon'} · Net: ${v.netWeight || '-'}kg / Gross: ${v.grossWeight || '-'}kg)`).join(', ')}` : '',
+        form.sizeVariants?.length ? `Variants: ${form.sizeVariants.map(v => `${v.size} (${v.stock} ${v.packingType || 'Cartoon'}${v.netWeight ? ` · Net: ${v.netWeight}kg` : ''})`).join(', ')}` : '',
       ].filter(Boolean).join(', ')
 
       const finalImages = uploadedImages.filter(Boolean)
+      const brandValue = form.brand || form.specifications?.['Brand Name'] || ''
 
       onSaveArrival?.({
         productId: matchedProduct.id,
@@ -368,7 +367,7 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
         notes,
         specifications: {
           Grade: form.specifications?.Grade || 'Premium',
-          ...(form.specifications?.['Brand Name'] ? { 'Brand Name': form.specifications['Brand Name'] } : {}),
+          ...(brandValue ? { 'Brand Name': brandValue } : {}),
           ...(form.specifications?.['Packing Type'] ? { 'Packing Type': form.specifications['Packing Type'] } : {}),
           ...(form.sizeVariants?.length ? { 'Size or Count': form.sizeVariants.map(v => v.size).join(', ') } : {}),
         },
@@ -392,9 +391,15 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
         return
       }
 
-      const quantity = form.sizeVariants?.reduce((sum, v) => sum + (v.stock * (v.netWeight || 1)), 0) || 0
+      // Quantity = total carton count across all sale variants (NOT weight-based)
+      const quantity = form.sizeVariants?.reduce((sum, v) => sum + v.stock, 0) || 0
+      // Use first variant's price as the unit price for the order line
       const unitPrice = form.sizeVariants?.[0]?.price || matchedProduct.basePrice || 0
-      const unit = matchedProduct.unit || 'kg'
+      const unit = matchedProduct.unit || 'pcs'
+      // Capture the first variant's identity for per-variant stock decrement
+      const firstVariant = form.sizeVariants?.[0]
+      const variantSize = firstVariant?.size || ''
+      const variantPackingType = firstVariant?.packingType || 'Cartoon'
 
       if (quantity <= 0) {
         toast.error('At least one variant with a positive quantity must be added.')
@@ -412,6 +417,8 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
         quantity,
         unit,
         unitPrice,
+        variantSize,
+        variantPackingType,
       })
       onClose()
       return
@@ -587,15 +594,18 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
                 if (matched) {
                   const matchedOrigin = matched.origin || matched.specifications?.Origin || '';
                   const matchedGrade = matched.specifications?.Grade || 'Premium';
+                  const matchedBrand = matched.brand || matched.specifications?.['Brand Name'] || '';
                   setForm((f) => ({
                     ...f,
                     name: selectedName,
                     category: matched.category,
                     origin: matchedOrigin,
+                    brand: matchedBrand,
                     specifications: {
                       ...(f.specifications ?? {}),
                       Grade: matchedGrade,
                       Origin: matchedOrigin,
+                      'Brand Name': matchedBrand,
                     }
                   }))
                 } else {
@@ -607,6 +617,23 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
                 <MenuItem key={p.id} value={p.name}>{p.name}</MenuItem>
               ))}
             </TextField>
+            <TextField
+              label="Brand"
+              size="small"
+              fullWidth
+              value={form.brand ?? form.specifications?.['Brand Name'] ?? ''}
+              onChange={(e) => {
+                const val = e.target.value;
+                setForm((f) => ({
+                  ...f,
+                  brand: val,
+                  specifications: {
+                    ...(f.specifications ?? {}),
+                    'Brand Name': val,
+                  }
+                }));
+              }}
+            />
             <TextField
               label="Category *"
               size="small"
@@ -776,16 +803,9 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
                   </Box>
                 )}
 
-                {stockInput && netWeightInput && (
+                {stockInput && (
                   <Typography sx={{ fontSize: 12, color: 'var(--brand-600)', mt: 1, fontWeight: 600 }}>
-                    Total weight to add: {(Number(stockInput) * Number(netWeightInput)).toLocaleString('en-IN')} kg ({stockInput} {packingTypeInput === 'Cartoon' ? 'Cartons' : `${packingTypeInput}s`} × {netWeightInput} kg)
-                  </Typography>
-                )}
-
-                {/* Maximum 6 size variants check message */}
-                {(form.sizeVariants ?? []).length >= 6 && editingSizeIndex === null && (
-                  <Typography sx={{ fontSize: 11.5, color: '#c0392b', mt: 1, fontWeight: 600 }}>
-                    Maximum 6 sizes allowed.
+                    Total to add: {stockInput} {packingTypeInput === 'Cartoon' ? 'Cartons' : `${packingTypeInput}s`}
                   </Typography>
                 )}
               </Box>
@@ -795,7 +815,6 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
                   variant="contained"
                   size="small"
                   onClick={handleSaveSize}
-                  disabled={(form.sizeVariants ?? []).length >= 6 && editingSizeIndex === null}
                   sx={{ borderRadius: 1.5, fontWeight: 700, textTransform: 'none' }}
                 >
                   {editingSizeIndex !== null ? 'Update Size' : 'Save Size'}

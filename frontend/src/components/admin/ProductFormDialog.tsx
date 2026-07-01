@@ -26,6 +26,7 @@ interface Props {
 
 const blank = {
   name: '',
+  brand: '',
   category: '',
   origin: 'India',
   grade: 'Premium',
@@ -40,6 +41,7 @@ export default function ProductFormDialog({ open, initial, categories, onClose, 
       if (initial) {
         setForm({
           name: initial.name,
+          brand: initial.brand || '',
           category: initial.category,
           origin: initial.origin || 'India',
           grade: initial.specifications?.Grade || 'Premium',
@@ -63,6 +65,7 @@ export default function ProductFormDialog({ open, initial, categories, onClose, 
       id: initial?.id ?? `p-${Date.now()}`,
       sku: '',
       name: form.name.trim(),
+      brand: form.brand.trim(),
       category: form.category,
       images: initial?.images ?? [],
       shortDescription: '',
@@ -71,7 +74,7 @@ export default function ProductFormDialog({ open, initial, categories, onClose, 
         Origin: form.origin,
         Grade: form.grade,
       },
-      unit: 'piece',
+      unit: 'pcs',
       moq: 1,
       availableStock: 0,
       stockStatus: 'in_stock',
@@ -100,6 +103,16 @@ export default function ProductFormDialog({ open, initial, categories, onClose, 
           label="Product name *"
           value={form.name}
           onChange={str('name')}
+          fullWidth
+          size="small"
+          disabled={isPending}
+        />
+
+        <TextField
+          label="Brand"
+          placeholder="e.g. Shimla Fresh / Imported"
+          value={form.brand}
+          onChange={str('brand')}
           fullWidth
           size="small"
           disabled={isPending}

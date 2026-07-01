@@ -166,7 +166,7 @@ export default function ArrivalsLogPage() {
                     <TableCell sx={{ fontSize: 13, fontWeight: 700 }}>{r.productName}</TableCell>
                     <TableCell sx={{ fontSize: 13 }}>{r.category}</TableCell>
                     <TableCell sx={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-700)' }}>
-                      +{r.requestedChange}
+                      +{r.requestedChange} cartons
                     </TableCell>
                     <TableCell sx={{ fontSize: 13 }}>
                       <Chip
@@ -177,7 +177,9 @@ export default function ArrivalsLogPage() {
                       />
                     </TableCell>
                     <TableCell sx={{ fontSize: 12.5, color: 'var(--ink-600)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={r.notes}>
-                      {r.notes || '-'}
+                      {r.sizeVariants && r.sizeVariants.length > 0
+                        ? r.sizeVariants.map(v => `${v.size} (${v.stock} ${v.packingType || 'Cartoon'})`).join(', ')
+                        : r.notes || '-'}
                     </TableCell>
                     <TableCell align="right">
                       <Chip

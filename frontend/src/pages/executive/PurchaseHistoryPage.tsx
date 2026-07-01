@@ -140,6 +140,7 @@ export default function PurchaseHistoryPage() {
                   <TableCell>Date</TableCell>
                   <TableCell>Vendor Name</TableCell>
                   <TableCell>Product Name</TableCell>
+                  <TableCell>Brand</TableCell>
                   {isAdminOrManager && <TableCell>Purchased By</TableCell>}
                   <TableCell>Quantity</TableCell>
                   <TableCell>Unit Price</TableCell>
@@ -150,17 +151,18 @@ export default function PurchaseHistoryPage() {
               </TableHead>
               <TableBody>
                 {filteredPurchases.map((p) => (
-                  <TableRow key={p.id} hover sx={{ '& td': { borderColor: 'var(--ink-100)', py: 1.5 } }}>
+                   <TableRow key={p.id} hover sx={{ '& td': { borderColor: 'var(--ink-100)', py: 1.5 } }}>
                     <TableCell sx={{ fontSize: 13, fontWeight: 600 }}>{formatDate(p.date)}</TableCell>
                     <TableCell sx={{ fontSize: 13, fontWeight: 700 }}>{p.vendor}</TableCell>
                     <TableCell sx={{ fontSize: 13 }}>{p.product}</TableCell>
+                    <TableCell sx={{ fontSize: 13, color: 'var(--ink-600)' }}>{p.brand || '—'}</TableCell>
                     {isAdminOrManager && (
                       <TableCell sx={{ fontSize: 13, fontWeight: 500, color: 'var(--ink-700)' }}>
                         {p.purchaser}
                       </TableCell>
                     )}
                     <TableCell sx={{ fontSize: 13 }}>
-                      {p.quantity} {p.unit}
+                      {p.quantity} cartons
                     </TableCell>
                     <TableCell sx={{ fontSize: 13, fontWeight: 500 }} className="tnum">
                       {formatMoney(p.buyPrice)}
@@ -169,7 +171,9 @@ export default function PurchaseHistoryPage() {
                       {formatMoney(p.total)}
                     </TableCell>
                     <TableCell sx={{ fontSize: 12.5, color: 'var(--ink-600)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={p.notes}>
-                      {p.notes || '-'}
+                      {p.sizeVariants && p.sizeVariants.length > 0
+                        ? p.sizeVariants.map(v => `${v.size} (${v.stock} ${v.packingType || 'Cartoon'})`).join(', ')
+                        : p.notes || '-'}
                     </TableCell>
                     <TableCell align="right">
                       <Chip

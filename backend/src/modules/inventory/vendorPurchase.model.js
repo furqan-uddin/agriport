@@ -22,6 +22,10 @@ const vendorPurchaseSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Product name snapshot is required'],
     },
+    brand: {
+      type: String,
+      default: '',
+    },
     quantity: {
       type: Number,
       required: [true, 'Quantity is required'],
@@ -52,6 +56,33 @@ const vendorPurchaseSchema = new mongoose.Schema(
     notes: {
       type: String,
       default: '',
+    },
+    sizeVariants: [
+      {
+        size: { type: String, required: true },
+        stock: { type: Number, required: true, default: 0 },
+        price: { type: Number, required: true, default: 0 },
+        packingType: { type: String, default: 'Cartoon' },
+        netWeight: { type: Number },
+        grossWeight: { type: Number },
+      },
+    ],
+    specifications: {
+      type: Map,
+      of: String,
+      default: {},
+    },
+    images: {
+      type: [String],
+      default: [],
+    },
+    origin: {
+      type: String,
+      default: '',
+    },
+    leadTimeDays: {
+      type: Number,
+      default: 0,
     },
   },
   {

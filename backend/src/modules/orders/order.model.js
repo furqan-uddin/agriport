@@ -24,7 +24,7 @@ const orderLineSchema = new mongoose.Schema(
     unit: {
       type: String,
       required: true,
-      default: 'kg',
+      default: 'pcs',
     },
     unitPrice: {
       type: Number,
@@ -39,6 +39,14 @@ const orderLineSchema = new mongoose.Schema(
       type: Map,
       of: String,
       default: {},
+    },
+    variantSize: {
+      type: String,
+      default: '',
+    },
+    variantPackingType: {
+      type: String,
+      default: '',
     },
   },
   { _id: false }
