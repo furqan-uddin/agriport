@@ -40,7 +40,17 @@ export default function ProductDetailPage() {
   const [qty, setQty] = useState(1)
   const [packingType, setPackingType] = useState<string>('Cartoon')
   const [specificSize, setSpecificSize] = useState<string>('')
-  const [containerOption, setContainerOption] = useState<string>('full')
+  const [containerOption, setContainerOption] = useState<string>('')
+
+  useEffect(() => {
+    if (product) {
+      if (product.containerOptionFull) {
+        setContainerOption('full')
+      } else if (product.containerOptionHalf) {
+        setContainerOption('half')
+      }
+    }
+  }, [product])
 
   useEffect(() => {
     if (product?.specifications?.['Packing Type']) {
@@ -70,7 +80,9 @@ export default function ProductDetailPage() {
         ...product.specifications,
         'Packing Type': activePackingType,
         'Specific Size': specificSize || 'Not specified',
-        'Container Option': containerOption === 'full' ? 'Full Container' : 'Half Container',
+        'Container Option': containerOption === 'full'
+          ? (product.containerOptionFull || 'Full Container')
+          : (product.containerOptionHalf || 'Cold Storage'),
       },
     }
     dispatch(addToCart({ product: updatedProduct, quantity: effectiveQty }))
@@ -266,50 +278,54 @@ export default function ProductDetailPage() {
             </Box>
 
             {/* Container Options */}
-            {product.showContainerOptions !== false && (
+            {product.showContainerOptions !== false && (product.containerOptionFull || product.containerOptionHalf) && (
             <Box sx={{ mb: 3.5 }}>
               <Typography sx={{ fontSize: 11.5, color: 'var(--ink-500)', fontWeight: 600, mb: 1 }}>
                 CONTAINER OPTION
               </Typography>
               <Box sx={{ display: 'flex', gap: 2 }}>
-                <Button
-                  variant={containerOption === 'full' ? 'contained' : 'outlined'}
-                  onClick={() => setContainerOption('full')}
-                  sx={{
-                    flex: 1,
-                    py: 1,
-                    borderRadius: 2.5,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    borderColor: 'var(--ink-200)',
-                    color: containerOption === 'full' ? '#fff' : 'var(--ink-800)',
-                    '&:hover': {
-                      borderColor: 'var(--ink-300)',
-                    }
-                  }}
-                >
-                  {product.containerOptionFull || 'Full Container'}
-                </Button>
-                <Button
-                  variant={containerOption === 'half' ? 'contained' : 'outlined'}
-                  onClick={() => setContainerOption('half')}
-                  sx={{
-                    flex: 1,
-                    py: 1,
-                    borderRadius: 2.5,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    borderColor: 'var(--ink-200)',
-                    color: containerOption === 'half' ? '#fff' : 'var(--ink-800)',
-                    '&:hover': {
-                      borderColor: 'var(--ink-300)',
-                    }
-                  }}
-                >
-                  {product.containerOptionHalf || 'Half Container'}
-                </Button>
+                {product.containerOptionFull && (
+                  <Button
+                    variant={containerOption === 'full' ? 'contained' : 'outlined'}
+                    onClick={() => setContainerOption('full')}
+                    sx={{
+                      flex: 1,
+                      py: 1,
+                      borderRadius: 2.5,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      borderColor: 'var(--ink-200)',
+                      color: containerOption === 'full' ? '#fff' : 'var(--ink-800)',
+                      '&:hover': {
+                        borderColor: 'var(--ink-300)',
+                      }
+                    }}
+                  >
+                    {product.containerOptionFull}
+                  </Button>
+                )}
+                {product.containerOptionHalf && (
+                  <Button
+                    variant={containerOption === 'half' ? 'contained' : 'outlined'}
+                    onClick={() => setContainerOption('half')}
+                    sx={{
+                      flex: 1,
+                      py: 1,
+                      borderRadius: 2.5,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      borderColor: 'var(--ink-200)',
+                      color: containerOption === 'half' ? '#fff' : 'var(--ink-800)',
+                      '&:hover': {
+                        borderColor: 'var(--ink-300)',
+                      }
+                    }}
+                  >
+                    {product.containerOptionHalf}
+                  </Button>
+                )}
               </Box>
             </Box>
             )}

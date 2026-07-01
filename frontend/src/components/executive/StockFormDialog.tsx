@@ -19,6 +19,7 @@ import {
   Switch,
   FormControlLabel,
   InputAdornment,
+  Checkbox,
 } from '@mui/material'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import EditRoundedIcon from '@mui/icons-material/EditRounded'
@@ -913,25 +914,41 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
                 />
               </Box>
               {(form.showContainerOptions ?? true) && (
-                <Box className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <TextField
-                    label="full container at port"
-                    size="small"
-                    fullWidth
-                    placeholder="full container at port"
-                    value={form.containerOptionFull ?? ''}
-                    onChange={(e) => setField('containerOptionFull', e.target.value)}
-                    helperText="Leave blank to use default"
-                  />
-                  <TextField
-                    label="available at cold storage"
-                    size="small"
-                    fullWidth
-                    placeholder="available at cold storage"
-                    value={form.containerOptionHalf ?? ''}
-                    onChange={(e) => setField('containerOptionHalf', e.target.value)}
-                    helperText="Leave blank to use default"
-                  />
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={form.containerOptionFull === 'Full Container at Port'}
+                          onChange={(e) => {
+                            setField('containerOptionFull', e.target.checked ? 'Full Container at Port' : '')
+                          }}
+                        />
+                      }
+                      label={<Typography sx={{ fontSize: 13.5, fontWeight: 600 }}>Full Container at Port</Typography>}
+                    />
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          checked={!!form.containerOptionHalf}
+                          onChange={(e) => {
+                            setField('containerOptionHalf', e.target.checked ? 'Cold Storage' : '')
+                          }}
+                        />
+                      }
+                      label={<Typography sx={{ fontSize: 13.5, fontWeight: 600 }}>Available at Cold Storage</Typography>}
+                    />
+                  </Box>
+                  {!!form.containerOptionHalf && (
+                    <TextField
+                      label="Cold Storage Name / Location *"
+                      size="small"
+                      fullWidth
+                      placeholder="e.g. Fortune Cold Storage, Pune"
+                      value={form.containerOptionHalf === 'Cold Storage' ? '' : form.containerOptionHalf}
+                      onChange={(e) => setField('containerOptionHalf', e.target.value)}
+                    />
+                  )}
                 </Box>
               )}
             </Box>
