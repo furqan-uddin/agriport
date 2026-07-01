@@ -136,8 +136,7 @@ export function generateQuotationInvoice(
   })
 
   const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0)
-  const gst = 0
-  const grandTotal = subtotal
+  const grandTotal = subtotal + shipping
 
   const invoiceNo = order.invoiceNo ?? `QT-${order.reference.slice(4)}`
   const customerName = order.customerName ?? 'Valued Customer'
@@ -184,6 +183,8 @@ export function generateQuotationInvoice(
       <tbody>${rows}</tbody>
     </table>
     <div class="totals">
+      <div class="row"><span>Subtotal</span><span>${formatMoney(subtotal)}</span></div>
+      ${shipping > 0 ? `<div class="row"><span>Shipping</span><span>${formatMoney(shipping)}</span></div>` : ''}
       <div class="row grand"><span>Grand Total</span><span>${formatMoney(grandTotal)}</span></div>
     </div>
     <div style="margin-top:32px; padding:16px; background:#EAF6F0; border-radius:8px; font-size:13px; color:#0E432F;">
@@ -204,6 +205,7 @@ export function generateQuotationInvoice(
     `📋 *Quotation Ref:* ${invoiceNo}\n` +
     `📅 *Date:* ${today}\n\n` +
     `📦 *Products:*\n${lineText}\n\n` +
+    (shipping > 0 ? `Subtotal: ${formatMoney(subtotal)}\nShipping Charge: ${formatMoney(shipping)}\n\n` : '') +
     `✅ *Grand Total: ${formatMoney(grandTotal)}*\n\n` +
     `This quotation is valid for 7 days. Please reply to confirm your order.\n\n` +
     `Regards,\n*Rahul Verma* — Agriport Sales Executive\n📞 +91 90000 00003`
