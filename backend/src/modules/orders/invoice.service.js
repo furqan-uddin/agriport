@@ -63,7 +63,7 @@ export const generateInvoice = async (order) => {
       // --- Invoice details (Right-aligned) ---
       doc.fontSize(16)
          .fillColor('#0A3324')
-         .text('TAX INVOICE', 350, 50, { align: 'right' });
+         .text('INVOICE', 350, 50, { align: 'right' });
       
       doc.fontSize(9)
          .fillColor('#333333')
@@ -125,20 +125,6 @@ export const generateInvoice = async (order) => {
 
       // --- Financial Summaries (Right Aligned) ---
       rowY += 10;
-      doc.fontSize(9)
-         .fillColor('#555555')
-         .text('Subtotal:', 350, rowY, { align: 'right', width: 90 })
-         .text(order.subtotal.toFixed(2), 445, rowY, { align: 'right', width: 100 });
-
-      rowY += 15;
-      doc.text('GST (Flat 5%):', 350, rowY, { align: 'right', width: 90 })
-         .text(order.tax.toFixed(2), 445, rowY, { align: 'right', width: 100 });
-
-      rowY += 15;
-      doc.text('Shipping:', 350, rowY, { align: 'right', width: 90 })
-         .text(order.shipping.toFixed(2), 445, rowY, { align: 'right', width: 100 });
-
-      rowY += 15;
       doc.fontSize(11)
          .fillColor('#0A3324')
          .text('Grand Total:', 350, rowY, { bold: true, align: 'right', width: 90 })
@@ -148,7 +134,7 @@ export const generateInvoice = async (order) => {
       doc.fontSize(8)
          .fillColor('#777777')
          .text('Thank you for choosing Agriport for your wholesale agro-sourcing requirements.', 50, 720, { align: 'center', width: 495 })
-         .text('This document is a computer-generated tax invoice and does not require a physical signature.', 50, 735, { align: 'center', width: 495 });
+         .text('This document is a computer-generated invoice and does not require a physical signature.', 50, 735, { align: 'center', width: 495 });
 
       doc.end();
 

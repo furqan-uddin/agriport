@@ -682,22 +682,6 @@ export default function SellProductForm({
                 </Typography>
               </Box>
               <Box className="flex justify-between">
-                <Typography sx={{ fontSize: 12.5, color: 'var(--ink-500)' }}>GST (5%)</Typography>
-                <Typography sx={{ fontSize: 12.5, fontWeight: 600 }} className="tnum">
-                  {formatMoney(
-                    Math.round(
-                      saleItems.reduce((acc, curr) => acc + curr.quantity * curr.unitPrice, 0) * 0.05 * 100
-                    ) / 100
-                  )}
-                </Typography>
-              </Box>
-              <Box className="flex justify-between">
-                <Typography sx={{ fontSize: 12.5, color: 'var(--ink-500)' }}>Shipping</Typography>
-                <Typography sx={{ fontSize: 12.5, fontWeight: 600 }} className="tnum">
-                  {saleItems.reduce((acc, curr) => acc + curr.quantity * curr.unitPrice, 0) >= 50000 ? 'Free' : formatMoney(1500)}
-                </Typography>
-              </Box>
-              <Box className="flex justify-between">
                 <Typography sx={{ fontSize: 12.5, color: 'var(--ink-500)' }}>Payment Mode</Typography>
                 <Typography sx={{ fontSize: 12.5, fontWeight: 600, textTransform: 'capitalize' }}>
                   {paymentMode}
@@ -707,11 +691,7 @@ export default function SellProductForm({
                 <Typography sx={{ fontSize: 12.5, color: 'var(--ink-500)' }}>Grand Total</Typography>
                 <Typography sx={{ fontSize: 13, fontWeight: 700, color: 'var(--brand-600)' }} className="tnum">
                   {formatMoney(
-                    saleItems.reduce((acc, curr) => acc + curr.quantity * curr.unitPrice, 0) +
-                    Math.round(
-                      saleItems.reduce((acc, curr) => acc + curr.quantity * curr.unitPrice, 0) * 0.05 * 100
-                    ) / 100 +
-                    (saleItems.reduce((acc, curr) => acc + curr.quantity * curr.unitPrice, 0) >= 50000 ? 0 : 1500)
+                    saleItems.reduce((acc, curr) => acc + curr.quantity * curr.unitPrice, 0)
                   )}
                 </Typography>
               </Box>
@@ -729,8 +709,6 @@ export default function SellProductForm({
                   toast.error('Please select a customer first.')
                   return
                 }
-                const subtotal = saleItems.reduce((acc, curr) => acc + curr.quantity * curr.unitPrice, 0)
-                const shipping = subtotal >= 50000 ? 0 : 1500
                 try {
                   const res = await createOrder({
                     customerId: selectedCustomerId,
@@ -744,7 +722,7 @@ export default function SellProductForm({
                     quotedPrices: Object.fromEntries(
                       saleItems.map(item => [item.productId, item.unitPrice])
                     ),
-                    quotedShipping: shipping,
+                    quotedShipping: 0,
                   }).unwrap()
 
                   toast.success(`Sale recorded successfully! Order Ref: ${res.data?.reference || ''}`)

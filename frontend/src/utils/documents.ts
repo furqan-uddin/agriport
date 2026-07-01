@@ -81,7 +81,7 @@ export function downloadInvoice(order: Order) {
     `Invoice ${order.invoiceNo ?? order.reference}`,
     `<div class="head">
       <div><div class="brand">Agriport</div><div class="muted">Wholesale Trading · CRM</div></div>
-      <div class="right"><span class="tag">TAX INVOICE</span>
+      <div class="right"><span class="tag">INVOICE</span>
       <div class="muted" style="margin-top:8px">${order.invoiceNo ?? order.reference}</div>
       <div class="muted">${formatDate(order.placedOn)}</div></div>
     </div>
@@ -94,9 +94,6 @@ export function downloadInvoice(order: Order) {
     <table><thead><tr><th>Product</th><th class="right">Qty</th><th class="right">Unit</th><th class="right">Amount</th></tr></thead>
     <tbody>${rows}</tbody></table>
     <div class="totals">
-      <div class="row"><span>Subtotal</span><span>${formatMoney(order.subtotal)}</span></div>
-      <div class="row"><span>GST (5%)</span><span>${formatMoney(order.tax)}</span></div>
-      <div class="row"><span>Shipping</span><span>${formatMoney(order.shipping)}</span></div>
       <div class="row grand"><span>Total</span><span>${formatMoney(order.total)}</span></div>
     </div>
     <div class="foot">This is a system-generated invoice for client review. © Agriport — B2B Wholesale Trading Platform.</div>`,
@@ -139,8 +136,8 @@ export function generateQuotationInvoice(
   })
 
   const subtotal = lines.reduce((s, l) => s + l.lineTotal, 0)
-  const gst = Math.round(subtotal * 0.05)
-  const grandTotal = subtotal + gst + shipping
+  const gst = 0
+  const grandTotal = subtotal
 
   const invoiceNo = order.invoiceNo ?? `QT-${order.reference.slice(4)}`
   const customerName = order.customerName ?? 'Valued Customer'
@@ -187,9 +184,6 @@ export function generateQuotationInvoice(
       <tbody>${rows}</tbody>
     </table>
     <div class="totals">
-      <div class="row"><span>Subtotal</span><span>${formatMoney(subtotal)}</span></div>
-      <div class="row"><span>GST (5%)</span><span>${formatMoney(gst)}</span></div>
-      <div class="row"><span>Shipping</span><span>${formatMoney(shipping)}</span></div>
       <div class="row grand"><span>Grand Total</span><span>${formatMoney(grandTotal)}</span></div>
     </div>
     <div style="margin-top:32px; padding:16px; background:#EAF6F0; border-radius:8px; font-size:13px; color:#0E432F;">
@@ -210,9 +204,6 @@ export function generateQuotationInvoice(
     `📋 *Quotation Ref:* ${invoiceNo}\n` +
     `📅 *Date:* ${today}\n\n` +
     `📦 *Products:*\n${lineText}\n\n` +
-    `💰 *Subtotal:* ${formatMoney(subtotal)}\n` +
-    `📊 *GST (5%):* ${formatMoney(gst)}\n` +
-    `🚚 *Shipping:* ${formatMoney(shipping)}\n` +
     `✅ *Grand Total: ${formatMoney(grandTotal)}*\n\n` +
     `This quotation is valid for 7 days. Please reply to confirm your order.\n\n` +
     `Regards,\n*Rahul Verma* — Agriport Sales Executive\n📞 +91 90000 00003`

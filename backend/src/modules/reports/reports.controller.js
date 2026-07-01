@@ -347,7 +347,7 @@ export const exportCSV = asyncWrapper(async (req, res, next) => {
   let rows = [];
 
   if (type === 'orders') {
-    headers = ['Order Reference', 'Customer Name', 'Company Name', 'Phone', 'City', 'Subtotal', 'Tax', 'Shipping', 'Total', 'Order Status', 'Payment Status', 'Date'];
+    headers = ['Order Reference', 'Customer Name', 'Company Name', 'Phone', 'City', 'Total', 'Order Status', 'Payment Status', 'Date'];
     const orders = await Order.find().sort({ createdAt: -1 });
     rows = orders.map(o => [
       o.reference || '',
@@ -355,9 +355,6 @@ export const exportCSV = asyncWrapper(async (req, res, next) => {
       o.companyName || '',
       o.customerPhone || '',
       o.customerCity || '',
-      o.subtotal || 0,
-      o.tax || 0,
-      o.shipping || 0,
       o.total || 0,
       o.status || '',
       o.paymentStatus || '',

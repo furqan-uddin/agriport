@@ -84,7 +84,7 @@ export default function ExecutiveEnquiriesPage() {
   const [pricingOpen, setPricingOpen] = useState(false)
   const [pricingEnquiry, setPricingEnquiry] = useState<Order | null>(null)
   const [linePrices, setLinePrices] = useState<Record<string, number>>({})
-  const [shippingCharge, setShippingCharge] = useState(1500)
+  const [shippingCharge, setShippingCharge] = useState(0)
   // Stored WhatsApp message after invoice generation
   const [whatsappMsg, setWhatsappMsg] = useState<string | null>(null)
 
@@ -164,7 +164,7 @@ export default function ExecutiveEnquiriesPage() {
       o.lines.map((l) => [l.productId, o.quotedPrices?.[l.productId] ?? l.unitPrice ?? 0]),
     )
     setLinePrices(initial)
-    setShippingCharge(o.quotedShipping ?? 1500)
+    setShippingCharge(o.quotedShipping ?? 0)
     setWhatsappMsg(null)
     setPricingOpen(true)
   }
@@ -234,7 +234,7 @@ export default function ExecutiveEnquiriesPage() {
 
   const handleRePrintInvoice = (o: Order) => {
     const prices = o.quotedPrices ?? Object.fromEntries(o.lines.map((l) => [l.productId, l.unitPrice ?? 0]))
-    const msg = generateQuotationInvoice(o, prices, o.quotedShipping ?? 1500)
+    const msg = generateQuotationInvoice(o, prices, o.quotedShipping ?? 0)
     setWhatsappMsg(msg)
   }
 
@@ -866,53 +866,21 @@ export default function ExecutiveEnquiriesPage() {
                 })}
               </Box>
 
-              {/* Shipping charge */}
-              <Divider />
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                <TextField
-                  label="Shipping Charge"
-                  size="small"
-                  type="number"
-                  value={shippingCharge}
-                  onChange={(e) => setShippingCharge(Number(e.target.value))}
-                  slotProps={{
-                    input: {
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Typography sx={{ fontSize: 14, color: 'var(--ink-500)', fontWeight: 600 }}>₹</Typography>
-                        </InputAdornment>
-                      ),
-                    },
-                  }}
-                  sx={{ width: 200 }}
-                />
-
-                {/* Live totals preview */}
-                {(() => {
-                  const subtotal = pricingEnquiry.lines.reduce(
-                    (s, l) => s + (linePrices[l.productId] ?? 0) * l.quantity,
-                    0,
-                  )
-                  const gst = Math.round(subtotal * 0.05)
-                  const grand = subtotal + gst + shippingCharge
-                  return (
-                    <Box sx={{ flex: 1, bgcolor: 'var(--ink-50)', p: 1.5, borderRadius: 2 }}>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                        <Typography sx={{ fontSize: 13, color: 'var(--ink-500)' }}>Subtotal</Typography>
-                        <Typography className="tnum" sx={{ fontSize: 13, fontWeight: 600 }}>{formatMoney(subtotal)}</Typography>
-                      </Box>
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography sx={{ fontSize: 13, color: 'var(--ink-500)' }}>GST (5%)</Typography>
-                        <Typography className="tnum" sx={{ fontSize: 13, fontWeight: 600 }}>{formatMoney(gst)}</Typography>
-                      </Box>
-                      <Divider sx={{ my: 0.75 }} />
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                        <Typography sx={{ fontSize: 14, fontWeight: 800, color: 'var(--brand-700)' }}>Grand Total</Typography>
-                        <Typography className="tnum" sx={{ fontSize: 14, fontWeight: 800, color: 'var(--brand-700)' }}>{formatMoney(grand)}</Typography>
-                      </Box>
+              {/* Live totals preview */}
+              {(() => {
+                const subtotal = pricingEnquiry.lines.reduce(
+                  (s, l) => s + (linePrices[l.productId] ?? 0) * l.quantity,
+                  0,
+                )
+                return (
+                  <Box sx={{ flex: 1, bgcolor: 'var(--ink-50)', p: 1.5, borderRadius: 2 }}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography sx={{ fontSize: 14, fontWeight: 800, color: 'var(--brand-700)' }}>Grand Total</Typography>
+                      <Typography className="tnum" sx={{ fontSize: 14, fontWeight: 800, color: 'var(--brand-700)' }}>{formatMoney(subtotal)}</Typography>
                     </Box>
-                  )
-                })()}
+                  </Box>
+                )
+              })()}
               </Box>
             </>
           )}

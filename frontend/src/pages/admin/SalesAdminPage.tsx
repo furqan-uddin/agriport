@@ -102,7 +102,7 @@ export default function SalesAdminPage() {
 
   const handleSaveSettings = async () => {
     try {
-      await updateSalesSettings({ commission, override, gstRate, shippingThreshold, baseShipping }).unwrap()
+      await updateSalesSettings({ commission, override, gstRate: 0, shippingThreshold: 0, baseShipping: 0 }).unwrap()
       toast.success('System settings saved')
     } catch (err: any) {
       toast.error(err?.data?.message || 'Failed to save settings')
@@ -237,36 +237,9 @@ export default function SalesAdminPage() {
               size="small"
               slotProps={{ input: { endAdornment: <InputAdornment position="end">%</InputAdornment> } }}
             />
-            <TextField
-              label="Sales GST Rate"
-              type="number"
-              value={gstRate}
-              onChange={(e) => setGstRate(Number(e.target.value))}
-              size="small"
-              slotProps={{ input: { endAdornment: <InputAdornment position="end">%</InputAdornment> } }}
-            />
-            <TextField
-              label="Shipping Threshold"
-              type="number"
-              value={shippingThreshold}
-              onChange={(e) => setShippingThreshold(Number(e.target.value))}
-              size="small"
-              slotProps={{ input: { endAdornment: <InputAdornment position="end">₹</InputAdornment> } }}
-            />
-            <TextField
-              label="Default Shipping Charge"
-              type="number"
-              value={baseShipping}
-              onChange={(e) => setBaseShipping(Number(e.target.value))}
-              size="small"
-              slotProps={{ input: { endAdornment: <InputAdornment position="end">₹</InputAdornment> } }}
-            />
             <Box sx={{ p: 2, borderRadius: 2.5, bgcolor: 'var(--brand-50)', border: '1px solid #9DD4BC' }}>
-              <Typography sx={{ fontSize: 12.5, color: 'var(--brand-800)', mb: 0.5 }}>
-                • Executives earn <strong>{commission}%</strong> on personal sales. Managers receive <strong>{override}%</strong> override.
-              </Typography>
               <Typography sx={{ fontSize: 12.5, color: 'var(--brand-800)' }}>
-                • GST is applied at <strong>{gstRate}%</strong>. Shipping of <strong>₹{baseShipping}</strong> is free on orders above <strong>₹{shippingThreshold.toLocaleString('en-IN')}</strong>.
+                • Executives earn <strong>{commission}%</strong> on personal sales. Managers receive <strong>{override}%</strong> override.
               </Typography>
             </Box>
             <Button variant="contained" onClick={handleSaveSettings} disabled={isUpdatingSettings}>

@@ -318,6 +318,7 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
         status,
         notes,
         specifications: {
+          Grade: form.specifications?.Grade || 'Premium',
           ...(form.specifications?.['Brand Name'] ? { 'Brand Name': form.specifications['Brand Name'] } : {}),
           ...(form.specifications?.['Packing Type'] ? { 'Packing Type': form.specifications['Packing Type'] } : {}),
           ...(form.sizeVariants?.length ? { 'Size or Count': form.sizeVariants.map(v => v.size).join(', ') } : {}),
@@ -366,6 +367,7 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
         type: 'add',
         notes,
         specifications: {
+          Grade: form.specifications?.Grade || 'Premium',
           ...(form.specifications?.['Brand Name'] ? { 'Brand Name': form.specifications['Brand Name'] } : {}),
           ...(form.specifications?.['Packing Type'] ? { 'Packing Type': form.specifications['Packing Type'] } : {}),
           ...(form.sizeVariants?.length ? { 'Size or Count': form.sizeVariants.map(v => v.size).join(', ') } : {}),
@@ -581,9 +583,24 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
               value={form.name ?? ''}
               onChange={(e) => {
                 const selectedName = e.target.value
-                setField('name', selectedName)
                 const matched = (dbProducts || []).find((p) => p.name === selectedName)
-                if (matched) setField('category', matched.category)
+                if (matched) {
+                  const matchedOrigin = matched.origin || matched.specifications?.Origin || '';
+                  const matchedGrade = matched.specifications?.Grade || 'Premium';
+                  setForm((f) => ({
+                    ...f,
+                    name: selectedName,
+                    category: matched.category,
+                    origin: matchedOrigin,
+                    specifications: {
+                      ...(f.specifications ?? {}),
+                      Grade: matchedGrade,
+                      Origin: matchedOrigin,
+                    }
+                  }))
+                } else {
+                  setField('name', selectedName)
+                }
               }}
             >
               {(dbProducts || []).map((p) => (
@@ -918,7 +935,7 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
                     readOnly: true,
                   },
                 }}
-                value="Imported"
+                value={specs['Grade'] || 'Premium'}
               />
               <TextField
                 label="Brand Name"

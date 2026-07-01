@@ -183,12 +183,9 @@ export const createOrder = asyncWrapper(async (req, res, next) => {
     const shippingThreshold = shippingThresholdSetting ? shippingThresholdSetting.value : 50000;
     const baseShipping = baseShippingSetting ? baseShippingSetting.value : 1500;
 
-    const tax = Math.round(subtotal * (gstRate / 100) * 100) / 100;
-    let shipping = subtotal < shippingThreshold ? baseShipping : 0;
-    if (req.user.role === 'executive' && quotedShipping !== undefined) {
-      shipping = Number(quotedShipping);
-    }
-    const total = subtotal + tax + shipping;
+    const tax = 0;
+    let shipping = 0;
+    const total = subtotal;
 
     // Build order object
     const orderData = {
@@ -552,17 +549,13 @@ export const quoteOrder = asyncWrapper(async (req, res, next) => {
         subtotal += line.lineTotal;
       }
       order.subtotal = subtotal;
-      const gstRateSetting = await SystemSetting.findOne({ key: 'gst_rate' });
-      const gstRate = gstRateSetting ? gstRateSetting.value : 5;
-      order.tax = Math.round(subtotal * (gstRate / 100) * 100) / 100;
+      order.tax = 0;
     }
 
-    if (quotedShipping !== undefined) {
-      order.quotedShipping = Number(quotedShipping);
-      order.shipping = Number(quotedShipping);
-    }
+    order.quotedShipping = 0;
+    order.shipping = 0;
     
-    order.total = order.subtotal + order.tax + order.shipping;
+    order.total = order.subtotal;
 
     // Update tracking timeline Confirmed item
     const confirmedItem = order.trackingTimeline.find((t) => t.label === 'Confirmed');
