@@ -46,6 +46,8 @@ export default function CheckoutPage() {
           productId: item.productId,
           quantity: item.quantity,
           specifications: item.specifications,
+          variantSize: item.specifications?.['Specific Size'] || '',
+          variantPackingType: item.specifications?.['Packing Type'] || 'Cartoon',
         })),
         paymentMode: 'offline',
         deliveryAddress: address || user?.address || '',

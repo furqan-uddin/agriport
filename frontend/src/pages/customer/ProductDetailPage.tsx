@@ -225,7 +225,7 @@ export default function ProductDetailPage() {
                   >
                     {product.sizeVariants.map((sv) => (
                       <MenuItem key={sv.size} value={sv.size}>
-                        {sv.size}{sv.packingType ? ` · ${sv.packingType}` : ''}{sv.netWeight ? ` (Net: ${sv.netWeight}kg)` : ''}
+                        {sv.size}{sv.packingType ? ` · ${sv.packingType}` : ''}
                       </MenuItem>
                     ))}
                   </TextField>
@@ -247,7 +247,7 @@ export default function ProductDetailPage() {
                 )}
                 {selectedVariant && (
                   <Typography sx={{ fontSize: 12, color: 'var(--brand-600)', fontWeight: 600, mt: 1 }}>
-                    Packaging: {selectedVariant.packingType || 'Cartoon'} {selectedVariant.netWeight ? `· Net Weight: ${selectedVariant.netWeight} kg · Gross Weight: ${selectedVariant.grossWeight} kg` : ''}
+                    Packaging: {selectedVariant.packingType || 'Cartoon'}
                   </Typography>
                 )}
               </Box>
@@ -260,7 +260,7 @@ export default function ProductDetailPage() {
                   onChange={setQty}
                   min={product.moq}
                   max={product.availableStock || undefined}
-                  unit={product.unit}
+                  unit={selectedVariant?.packingType === 'Basket' ? 'baskets' : 'cartons'}
                 />
               </Box>
             </Box>

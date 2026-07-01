@@ -8,6 +8,74 @@ import AppError from '../../utils/AppError.js';
 import { successResponse } from '../../utils/apiResponse.js';
 import eventBus from '../../events/index.js';
 
+// Helper to look up or dynamically create a brand-specific product cloned from a base product
+const getOrCreateBrandedProduct = async (baseProductId, brandName, session) => {
+  const queryOpts = session ? { session } : {};
+  const baseProduct = session
+    ? await Product.findById(baseProductId).session(session)
+    : await Product.findById(baseProductId);
+  if (!baseProduct) {
+    throw new AppError('Base product not found.', 404);
+  }
+
+  const cleanBrand = (brandName || '').trim();
+
+  // If no brand is specified, or it matches the base product's brand, return base product
+  if (!cleanBrand || (baseProduct.brand || '').trim().toLowerCase() === cleanBrand.toLowerCase()) {
+    return baseProduct;
+  }
+
+  // Look for a product with the same name and the requested brand
+  const query = {
+    name: baseProduct.name,
+    brand: cleanBrand,
+    isArchived: { $ne: true }
+  };
+  let brandedProduct = await Product.findOne(query, null, queryOpts);
+
+  if (!brandedProduct) {
+    // Generate new SKU for cloned branded product
+    const cleanName = (baseProduct.name || 'PROD').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const newSku = `SKU-${cleanName.substring(0, 10)}-${rand}`;
+
+    // Auto-create/clone the base product under the new brand!
+    const newProductData = {
+      name: baseProduct.name,
+      sku: newSku,
+      category: baseProduct.category,
+      origin: baseProduct.origin,
+      grade: baseProduct.grade,
+      brand: cleanBrand,
+      stock: 0,
+      unit: baseProduct.unit || 'pcs',
+      isExecutiveOnly: baseProduct.isExecutiveOnly,
+      images: baseProduct.images || [],
+      description: baseProduct.description || '',
+      moq: baseProduct.moq || 1,
+      status: 'out_of_stock',
+      priceSlabs: baseProduct.priceSlabs || [],
+      sizeVariants: [],
+      specifications: {},
+    };
+
+    if (session) {
+      const created = await Product.create([newProductData], { session });
+      brandedProduct = created[0];
+    } else {
+      brandedProduct = await Product.create(newProductData);
+    }
+
+    // Set specifications safely on the map
+    brandedProduct.specifications.set('Grade', baseProduct.specifications.get('Grade') || baseProduct.grade);
+    brandedProduct.specifications.set('Origin', baseProduct.specifications.get('Origin') || baseProduct.origin);
+    brandedProduct.specifications.set('Brand Name', cleanBrand);
+    await brandedProduct.save(queryOpts);
+  }
+
+  return brandedProduct;
+};
+
 // Helper to update product stock, size variants, specifications, origin, images and leadTimeDays
 // NOTE: stockChange is now the CARTON COUNT (not kg weight).
 // product.stock is automatically recomputed from sizeVariants sum by the Product pre-save hook.
@@ -218,14 +286,12 @@ export const createStockRequest = asyncWrapper(async (req, res, next) => {
     return next(new AppError('Product ID, request type, and requested change quantity are required.', 400));
   }
 
-  const product = await Product.findById(productId);
-  if (!product) {
-    return next(new AppError('Product not found.', 404));
-  }
+  const brand = req.body.brand || (specifications && specifications['Brand Name']) || '';
+  const product = await getOrCreateBrandedProduct(productId, brand);
 
   // requestedChange is now the CARTON COUNT = sum of all variant stock counts
   const stockRequest = await StockRequest.create({
-    productId,
+    productId: product._id,
     productName: product.name,
     category: product.category ? product.category.toString() : 'General',
     requesterId: req.user._id,
@@ -304,12 +370,7 @@ export const createVendorPurchase = asyncWrapper(async (req, res, next) => {
   }
 
   try {
-    const product = session
-      ? await Product.findById(productId).session(session)
-      : await Product.findById(productId);
-    if (!product) {
-      throw new AppError('Product not found.', 404);
-    }
+    const product = await getOrCreateBrandedProduct(productId, brand, session);
 
     const price = Number(buyPrice);
     const total = qty * price;
@@ -318,7 +379,7 @@ export const createVendorPurchase = asyncWrapper(async (req, res, next) => {
     const purchaseData = {
       purchasedBy: req.user._id,
       vendorName,
-      productId,
+      productId: product._id,
       productName: product.name,
       brand: brand || product.brand || '',
       quantity: qty,
@@ -346,7 +407,7 @@ export const createVendorPurchase = asyncWrapper(async (req, res, next) => {
     // If already received, immediately update stock and details
     if (purchaseStatus === 'received') {
       await updateProductStockAndDetails(
-        productId,
+        product._id,
         {
           type: 'add',
           sizeVariants,

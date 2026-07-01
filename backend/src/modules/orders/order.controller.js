@@ -200,16 +200,8 @@ export const createOrder = asyncWrapper(async (req, res, next) => {
     }
 
     // Financial calculations
-    const gstRateSetting = await SystemSetting.findOne({ key: 'gst_rate' });
-    const shippingThresholdSetting = await SystemSetting.findOne({ key: 'shipping_threshold' });
-    const baseShippingSetting = await SystemSetting.findOne({ key: 'base_shipping_charge' });
-
-    const gstRate = gstRateSetting ? gstRateSetting.value : 5;
-    const shippingThreshold = shippingThresholdSetting ? shippingThresholdSetting.value : 50000;
-    const baseShipping = baseShippingSetting ? baseShippingSetting.value : 1500;
-
     const tax = 0;
-    let shipping = 0;
+    const shipping = 0;
     const total = subtotal;
 
     // Build order object

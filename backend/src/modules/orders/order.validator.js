@@ -15,6 +15,8 @@ export const createOrderSchema = z.object({
         z.number().int().min(1, 'Quantity must be at least 1')
       ),
       specifications: z.record(z.string()).optional(),
+      variantSize: z.string().optional(),
+      variantPackingType: z.string().optional(),
     })
   ).min(1, 'Order must contain at least one line item.'),
   paymentMode: z.enum(['bank_transfer', 'cash', 'offline']).default('offline'),
