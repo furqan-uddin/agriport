@@ -13,6 +13,7 @@ import {
   TableCell,
   TableBody,
   IconButton,
+  Alert,
 } from '@mui/material'
 import {
   useGetProductsQuery,
@@ -23,11 +24,14 @@ import {
 } from '@/redux/api'
 import { resolveUnitPrice } from '@/utils/pricing'
 import { formatMoney } from '@/utils/format'
-import type { Product, PurchaseDraft, ArrivalDraft, SaleDraft, SaleItemDraft } from '@/types'
+import type { Product, PurchaseDraft, ArrivalDraft, SaleDraft, SaleItemDraft, Order } from '@/types'
 import toast from 'react-hot-toast'
 import StockFormDialog from '@/components/executive/StockFormDialog'
 import AddRoundedIcon from '@mui/icons-material/AddRounded'
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded'
+import WhatsAppIcon from '@mui/icons-material/WhatsApp'
+import PrintRoundedIcon from '@mui/icons-material/PrintRounded'
+import { generateQuotationInvoice } from '@/utils/documents'
 
 export default function SellProductForm({
   formMode,
@@ -68,6 +72,8 @@ export default function SellProductForm({
   const [saleNotes, setSaleNotes] = useState('')
   const [saleItems, setSaleItems] = useState<SaleItemDraft[]>([])
   const [createOrder, { isLoading: isCreatingOrder }] = useCreateOrderMutation()
+  const [createdOrder, setCreatedOrder] = useState<Order | null>(null)
+  const [whatsappMsg, setWhatsappMsg] = useState<string | null>(null)
 
   const handleSaleDialogSave = (draft: SaleItemDraft) => {
     setSaleItems((prev) => {
@@ -102,6 +108,70 @@ export default function SellProductForm({
     setQty(savedProduct.moq)
     setPrice(resolveUnitPrice(savedProduct.pricingSlabs, savedProduct.moq).price)
     setShowSummary(true)
+  }
+
+  if (formMode === 'sale' && createdOrder) {
+    return (
+      <Box sx={{ p: 3, border: '1px solid var(--ink-200)', borderRadius: 4, bgcolor: '#fff', display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 640, mx: 'auto', mt: 4 }}>
+        <Alert severity="success" sx={{ borderRadius: 3 }}>
+          <strong>Sale logged successfully!</strong> Invoice has been generated. Use the buttons below to share or print.
+        </Alert>
+
+        <Box sx={{ p: 2, bgcolor: 'var(--ink-50)', borderRadius: 3 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: 14, mb: 1 }}>ORDER DETAILS</Typography>
+          <Typography sx={{ fontSize: 13, color: 'var(--ink-600)' }}>Reference: <strong>{createdOrder.reference}</strong></Typography>
+          <Typography sx={{ fontSize: 13, color: 'var(--ink-600)' }}>Customer: <strong>{createdOrder.companyName || createdOrder.customerName}</strong></Typography>
+          <Typography sx={{ fontSize: 13, color: 'var(--ink-600)' }}>Total: <strong>{formatMoney(createdOrder.total)}</strong></Typography>
+        </Box>
+
+        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+          <Button
+            variant="contained"
+            color="success"
+            startIcon={<WhatsAppIcon />}
+            onClick={() => {
+              const phone = createdOrder.customerPhone?.replace(/[^0-9]/g, '') ?? ''
+              const url = `https://wa.me/${phone}?text=${encodeURIComponent(whatsappMsg || '')}`
+              window.open(url, '_blank')
+            }}
+            sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, flex: 1 }}
+          >
+            Send to WhatsApp
+          </Button>
+          <Button
+            variant="outlined"
+            startIcon={<PrintRoundedIcon />}
+            onClick={() => {
+              const prices = Object.fromEntries(
+                createdOrder.lines.map(l => [l.productId, l.unitPrice])
+              );
+              generateQuotationInvoice(createdOrder, prices, 0);
+            }}
+            sx={{ textTransform: 'none', fontWeight: 700, borderRadius: 2, flex: 1 }}
+          >
+            Print Invoice
+          </Button>
+        </Box>
+
+        <Button
+          variant="outlined"
+          onClick={() => {
+            // Reset states
+            setSaleItems([])
+            setSelectedCustomerId('')
+            setDeliveryAddress('')
+            setSaleNotes('')
+            setPaymentMode('offline')
+            setCreatedOrder(null)
+            setWhatsappMsg(null)
+            setShowSummary(false)
+          }}
+          sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
+        >
+          Record Another Sale
+        </Button>
+      </Box>
+    )
   }
 
   return (
@@ -728,15 +798,15 @@ export default function SellProductForm({
                     quotedShipping: 0,
                   }).unwrap()
 
-                  toast.success(`Sale recorded successfully! Order Ref: ${res.data?.reference || ''}`)
-                  
-                  // Reset states
-                  setSaleItems([])
-                  setSelectedCustomerId('')
-                  setDeliveryAddress('')
-                  setSaleNotes('')
-                  setPaymentMode('offline')
-                  setShowSummary(false)
+                  const order = res.data;
+                  const prices = Object.fromEntries(
+                    saleItems.map(item => [item.productId, item.unitPrice])
+                  );
+                  const msg = generateQuotationInvoice(order, prices, 0);
+
+                  setCreatedOrder(order);
+                  setWhatsappMsg(msg);
+                  toast.success(`Sale recorded successfully! Order Ref: ${order?.reference || ''}`);
                 } catch (err: any) {
                   toast.error(err.data?.message || 'Failed to record sale')
                 }

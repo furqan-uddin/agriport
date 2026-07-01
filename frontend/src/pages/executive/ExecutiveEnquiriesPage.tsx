@@ -716,17 +716,6 @@ export default function ExecutiveEnquiriesPage() {
                   Close
                 </Button>
 
-                {selectedEnquiry.status === 'placed' && (
-                  <Button
-                    variant="contained"
-                    startIcon={<CurrencyRupeeRoundedIcon />}
-                    onClick={() => handleConfirm(selectedEnquiry)}
-                    sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
-                  >
-                    Set Prices & Confirm
-                  </Button>
-                )}
-
                 {(selectedEnquiry.status === 'confirmed' || selectedEnquiry.status === 'completed') && (
                   <>
                     <Button
@@ -750,21 +739,6 @@ export default function ExecutiveEnquiriesPage() {
                       Send to WhatsApp
                     </Button>
                   </>
-                )}
-
-                {selectedEnquiry.status === 'confirmed' && (
-                  <Button
-                    variant="contained"
-                    color="success"
-                    startIcon={<ShoppingCartRoundedIcon />}
-                    onClick={() => {
-                      handleRecordSale(selectedEnquiry)
-                      setSelectedEnquiry(null)
-                    }}
-                    sx={{ textTransform: 'none', fontWeight: 600, borderRadius: 2 }}
-                  >
-                    Record Sale (Log Deal)
-                  </Button>
                 )}
               </Box>
             </DialogActions>
