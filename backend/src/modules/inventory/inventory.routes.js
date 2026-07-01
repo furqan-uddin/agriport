@@ -5,7 +5,11 @@ import authorize from '../../middlewares/authorize.js';
 
 const router = express.Router();
 
-// All routes require authentication
+// Public (shareToken-based) route — must be declared BEFORE the authenticate middleware
+// so that the WhatsApp link works without a JWT
+router.get('/vendor-purchases/:id/pdf', inventoryController.downloadPurchasePdf);
+
+// All other routes require authentication
 router.use(authenticate);
 
 // Get all stock requests (Admin/Manager/Executive)

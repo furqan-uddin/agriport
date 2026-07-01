@@ -1,4 +1,6 @@
 import mongoose from 'mongoose';
+import fs from 'fs';
+import path from 'path';
 import StockRequest from './stockRequest.model.js';
 import VendorPurchase from './vendorPurchase.model.js';
 import Product from '../products/product.model.js';
@@ -7,6 +9,8 @@ import asyncWrapper from '../../utils/asyncWrapper.js';
 import AppError from '../../utils/AppError.js';
 import { successResponse } from '../../utils/apiResponse.js';
 import eventBus from '../../events/index.js';
+import notificationService from '../notifications/notification.service.js';
+import { generatePurchasePdf } from './purchase.service.js';
 
 // Helper to look up or dynamically create a brand-specific product cloned from a base product
 const getOrCreateBrandedProduct = async (baseProductId, brandName, session) => {
@@ -344,7 +348,7 @@ export const getVendorPurchases = asyncWrapper(async (req, res) => {
 export const createVendorPurchase = asyncWrapper(async (req, res, next) => {
   const {
     vendorName, productId, unit, buyPrice, purchaseDate,
-    notes, status, specifications, sizeVariants, images, origin, leadTimeDays, brand
+    notes, status, specifications, sizeVariants, images, origin, leadTimeDays, brand, vendorPhone
   } = req.body;
 
   if (!vendorName || !productId || !buyPrice || !purchaseDate) {
@@ -379,6 +383,7 @@ export const createVendorPurchase = asyncWrapper(async (req, res, next) => {
     const purchaseData = {
       purchasedBy: req.user._id,
       vendorName,
+      vendorPhone: vendorPhone || '',
       productId: product._id,
       productName: product.name,
       brand: brand || product.brand || '',
@@ -426,6 +431,36 @@ export const createVendorPurchase = asyncWrapper(async (req, res, next) => {
 
     eventBus.emit('vendorPurchase.created', { purchase: purchaseDoc, purchaser: req.user });
 
+    // ── WhatsApp + PDF notification ──────────────────────────────────────────
+    // Fire-and-forget: errors here must NOT fail the API response
+    (async () => {
+      try {
+        await generatePurchasePdf(purchaseDoc);
+        const phone = purchaseDoc.vendorPhone || vendorPhone || '';
+        if (phone) {
+          const backendBase = process.env.BASE_URL || 'http://localhost:5000';
+          const pdfUrl = `${backendBase}/api/v1/inventory/vendor-purchases/${purchaseDoc._id}/pdf?shareToken=${purchaseDoc.shareToken}`;
+          const variantLines = (purchaseDoc.sizeVariants || []).map(v =>
+            `  • ${v.size} — ${v.stock} cartons @ ₹${v.price || purchaseDoc.buyPrice}`
+          ).join('\n');
+          const whatsappMessage =
+            `Dear ${purchaseDoc.vendorName},\n` +
+            `Agriport has placed a Purchase Order for the following:\n\n` +
+            `Product: ${purchaseDoc.productName}` +
+            (purchaseDoc.brand ? ` (${purchaseDoc.brand})` : '') + `\n` +
+            (variantLines ? `${variantLines}\n` : `Quantity: ${purchaseDoc.quantity} ${purchaseDoc.unit}\n`) +
+            `Total Value: ₹${purchaseDoc.total.toFixed(2)}\n\n` +
+            `Please find the Purchase Order attached below.`;
+          notificationService.sendWhatsApp(phone, whatsappMessage, pdfUrl);
+        }
+      } catch (notifErr) {
+        // Non-critical — log and continue
+        const logger = (await import('../../config/logger.js')).default;
+        logger.error('[createVendorPurchase] WhatsApp/PDF notification error:', notifErr);
+      }
+    })();
+    // ────────────────────────────────────────────────────────────────────────
+
     return successResponse(res, purchaseDoc, 201, 'Vendor purchase logged successfully.');
   } catch (error) {
     if (session) {
@@ -437,4 +472,48 @@ export const createVendorPurchase = asyncWrapper(async (req, res, next) => {
       session.endSession();
     }
   }
+});
+
+// 6. Download a vendor purchase PDF (via shareToken)
+export const downloadPurchasePdf = asyncWrapper(async (req, res, next) => {
+  const { id } = req.params;
+  const { shareToken } = req.query;
+
+  const purchase = await VendorPurchase.findById(id);
+  if (!purchase) {
+    return next(new AppError('Purchase record not found.', 404));
+  }
+
+  // Authorization: shareToken match OR authenticated admin/manager/executive
+  let isAuthorized = false;
+
+  if (shareToken && purchase.shareToken && shareToken === purchase.shareToken) {
+    isAuthorized = true;
+  }
+
+  if (!isAuthorized && req.user) {
+    if (['admin', 'manager', 'executive'].includes(req.user.role)) {
+      isAuthorized = true;
+    }
+  }
+
+  if (!isAuthorized) {
+    return next(new AppError('You are not authorized to view this purchase document.', 403));
+  }
+
+  const secureDir = path.join(process.cwd(), 'uploads', 'secure_purchases');
+  const filePath = path.join(secureDir, `${purchase._id}.pdf`);
+
+  if (!fs.existsSync(filePath)) {
+    // Generate on demand if file is missing
+    try {
+      await generatePurchasePdf(purchase);
+    } catch (err) {
+      return next(new AppError('Failed to generate purchase PDF.', 500));
+    }
+  }
+
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `inline; filename="purchase_order_${purchase._id}.pdf"`);
+  return fs.createReadStream(filePath).pipe(res);
 });

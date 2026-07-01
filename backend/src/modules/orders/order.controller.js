@@ -15,6 +15,7 @@ import path from 'path';
 import jwt from 'jsonwebtoken';
 import env from '../../config/env.js';
 import { generateInvoice } from './invoice.service.js';
+import notificationService from '../notifications/notification.service.js';
 
 // Helper to resolve unit price based on price slabs
 const resolveUnitPrice = (priceSlabs, quantity) => {
@@ -258,6 +259,42 @@ export const createOrder = asyncWrapper(async (req, res, next) => {
     if (orderDoc.paymentMode === 'offline' || orderDoc.paymentMode === 'bank_transfer') {
       eventBus.emit('payment.submitted', { order: orderDoc, amount: orderDoc.total });
     }
+
+    // ── WhatsApp Invoice Notification (for direct staff sales only) ──────────
+    // Fire-and-forget: errors here must NOT fail the API response
+    if (['executive', 'admin', 'manager'].includes(req.user.role)) {
+      (async () => {
+        try {
+          // Fetch the freshly saved order (includes shareToken from pre-save hook)
+          const savedOrder = await Order.findById(orderDoc._id);
+          if (!savedOrder) return;
+
+          await generateInvoice(savedOrder);
+
+          const phone = savedOrder.customerPhone;
+          if (phone) {
+            const backendBase = process.env.BASE_URL || 'http://localhost:5000';
+            const invoiceUrl = `${backendBase}/api/v1/orders/${savedOrder._id}/invoice?shareToken=${savedOrder.shareToken}`;
+            const lineItems = (savedOrder.lines || []).map(l =>
+              `  • ${l.name} — ${l.quantity} ${l.unit} @ ₹${l.unitPrice} = ₹${l.lineTotal}`
+            ).join('\n');
+            const whatsappMessage =
+              `Dear ${savedOrder.customerName},\n` +
+              `Thank you for your purchase from Agriport!\n\n` +
+              `Order: ${savedOrder.reference}\n` +
+              `${lineItems ? lineItems + '\n' : ''}` +
+              `Total: ₹${savedOrder.total.toFixed(2)}\n\n` +
+              `Your invoice is attached below. Thank you for choosing Agriport!`;
+            notificationService.sendWhatsApp(phone, whatsappMessage, invoiceUrl);
+          }
+        } catch (notifErr) {
+          // Non-critical — log and continue
+          const loggerMod = await import('../../config/logger.js');
+          loggerMod.default.error('[createOrder] WhatsApp/PDF notification error:', notifErr);
+        }
+      })();
+    }
+    // ────────────────────────────────────────────────────────────────────────
 
     return successResponse(res, orderDoc, 201, 'Order placed successfully.');
   } catch (error) {

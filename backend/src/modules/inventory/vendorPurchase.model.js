@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import crypto from 'crypto';
 
 const vendorPurchaseSchema = new mongoose.Schema(
   {
@@ -57,6 +58,14 @@ const vendorPurchaseSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    vendorPhone: {
+      type: String,
+      default: '',
+    },
+    shareToken: {
+      type: String,
+      default: '',
+    },
     sizeVariants: [
       {
         size: { type: String, required: true },
@@ -89,6 +98,14 @@ const vendorPurchaseSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Pre-save hook: auto-generate shareToken on first save
+vendorPurchaseSchema.pre('save', function (next) {
+  if (!this.shareToken) {
+    this.shareToken = crypto.randomBytes(16).toString('hex');
+  }
+  next();
+});
 
 const VendorPurchase = mongoose.model('VendorPurchase', vendorPurchaseSchema);
 

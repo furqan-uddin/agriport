@@ -346,6 +346,7 @@ export interface VendorPurchase {
 
 export interface PurchaseDraft {
   vendorName: string
+  vendorPhone?: string
   productId: string
   productName: string
   brand?: string

@@ -306,6 +306,7 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
 
       onSavePurchase?.({
         vendorName,
+        vendorPhone: selectedVendor?.phone || '',
         productId: matchedProduct.id,
         productName: matchedProduct.name,
         brand: brandValue,

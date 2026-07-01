@@ -616,6 +616,7 @@ export default function SellProductForm({
                 try {
                   const res = await createVendorPurchase({
                     vendorName: purchaseDraft.vendorName,
+                    vendorPhone: purchaseDraft.vendorPhone || '',
                     productId: purchaseDraft.productId,
                     brand: purchaseDraft.brand,
                     quantity: purchaseDraft.quantity,
