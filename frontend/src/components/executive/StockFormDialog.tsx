@@ -731,6 +731,11 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
                     placeholder="e.g. XL"
                     size="small"
                     fullWidth
+                    slotProps={{
+                      inputLabel: {
+                        shrink: true,
+                      },
+                    }}
                     value={sizeInput}
                     onChange={(e) => setSizeInput(e.target.value)}
                   />
@@ -740,6 +745,11 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
                     size="small"
                     type="number"
                     fullWidth
+                    slotProps={{
+                      inputLabel: {
+                        shrink: true,
+                      },
+                    }}
                     value={stockInput}
                     onChange={(e) => setStockInput(e.target.value === '' ? '' : Number(e.target.value))}
                   />
@@ -752,6 +762,9 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
                     slotProps={{
                       input: {
                         startAdornment: <InputAdornment position="start">₹</InputAdornment>,
+                      },
+                      inputLabel: {
+                        shrink: true,
                       },
                     }}
                     value={priceInput}
@@ -783,6 +796,9 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
                         input: {
                           endAdornment: <InputAdornment position="end">/kg</InputAdornment>,
                         },
+                        inputLabel: {
+                          shrink: true,
+                        },
                       }}
                       value={netWeightInput}
                       onChange={(e) => setNetWeightInput(e.target.value === '' ? '' : Number(e.target.value))}
@@ -796,6 +812,9 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
                       slotProps={{
                         input: {
                           endAdornment: <InputAdornment position="end">/kg</InputAdornment>,
+                        },
+                        inputLabel: {
+                          shrink: true,
                         },
                       }}
                       value={grossWeightInput}
