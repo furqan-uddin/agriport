@@ -340,10 +340,9 @@ export default function ProductDetailPage() {
                   fontSize: { xs: 13, md: 15 },
                   whiteSpace: 'nowrap',
                 }}
-                disabled={outOfStock}
                 onClick={handleAdd}
               >
-                {outOfStock ? 'Out of stock' : 'Send enquiry'}
+                Send enquiry
               </Button>
             </Box>
           </Box>
