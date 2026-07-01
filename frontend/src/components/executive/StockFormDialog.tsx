@@ -170,6 +170,28 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
       toast.error('Available stock must be a non-negative number')
       return
     }
+
+    if (formMode === 'sale') {
+      const matchedProduct = dbProducts?.find((p) => p.name === form.name)
+      if (!matchedProduct) {
+        toast.error('Please select a product first.')
+        return
+      }
+      const existingDbVariant = matchedProduct.sizeVariants?.find(
+        (v) => v.size.toLowerCase() === sizeVal.toLowerCase() &&
+          (v.packingType || 'Cartoon') === packingTypeInput
+      )
+      if (!existingDbVariant) {
+        toast.error(`Size variant "${sizeVal}" (${packingTypeInput}) is not available in stock for this product.`)
+        return
+      }
+      const maxAvailable = existingDbVariant.stock || 0
+      if (Number(stockInput) > maxAvailable) {
+        toast.error(`Quantity to Sell exceeds available stock for size "${sizeVal}". Available: ${maxAvailable}`)
+        return
+      }
+    }
+
     if (priceInput === '' || priceInput < 0 || isNaN(Number(priceInput))) {
       const priceLabel = formMode === 'purchase' ? 'Purchased Price' : (formMode === 'arrival' ? 'Price' : 'Selling Price')
       toast.error(`${priceLabel} must be a non-negative number`)
@@ -408,8 +430,21 @@ export default function StockFormDialog({ open, onClose, productToEdit, onSave, 
         return
       }
 
+      // Double check all sizeVariants stock limits
+      for (const saleVar of form.sizeVariants || []) {
+        const dbVar = matchedProduct.sizeVariants?.find(
+          (v) => v.size.toLowerCase() === saleVar.size.toLowerCase() &&
+            (v.packingType || 'Cartoon') === (saleVar.packingType || 'Cartoon')
+        )
+        const maxAvailable = dbVar ? (dbVar.stock || 0) : 0
+        if (saleVar.stock > maxAvailable) {
+          toast.error(`Quantity for size "${saleVar.size}" (${saleVar.packingType || 'Cartoon'}) exceeds available stock. Available: ${maxAvailable}`)
+          return
+        }
+      }
+
       if (quantity > (matchedProduct.availableStock || 0)) {
-        toast.error(`Quantity exceeds available stock. Available: ${matchedProduct.availableStock}`)
+        toast.error(`Quantity exceeds total available stock. Available: ${matchedProduct.availableStock}`)
         return
       }
 
