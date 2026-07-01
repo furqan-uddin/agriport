@@ -881,7 +881,6 @@ export default function ExecutiveEnquiriesPage() {
                   </Box>
                 )
               })()}
-              </Box>
             </>
           )}
 
