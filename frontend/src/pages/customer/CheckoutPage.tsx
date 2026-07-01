@@ -1,10 +1,8 @@
-import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Box,
   Typography,
   Button,
-  TextField,
   Divider,
   CircularProgress,
 } from '@mui/material'
@@ -24,14 +22,7 @@ export default function CheckoutPage() {
   const navigate = useNavigate()
   const items = useAppSelector((s) => s.cart.items)
   const user = useAppSelector((s) => s.auth.user)
-  const [address, setAddress] = useState('')
   const [createOrder, { isLoading: placing }] = useCreateOrderMutation()
-
-  useEffect(() => {
-    if (user?.address) {
-      setAddress(user.address)
-    }
-  }, [user])
 
   if (items.length === 0) {
     return (
@@ -50,7 +41,7 @@ export default function CheckoutPage() {
           variantPackingType: item.specifications?.['Packing Type'] || 'Cartoon',
         })),
         paymentMode: 'offline',
-        deliveryAddress: address || user?.address || '',
+        deliveryAddress: user?.address || 'Pickup from Agriport Warehouse',
       }
 
       await createOrder(orderPayload).unwrap()
@@ -70,35 +61,13 @@ export default function CheckoutPage() {
         crumbs={[{ label: 'Home', to: ROUTES.home }, { label: 'Cart', to: ROUTES.cart }, { label: 'Submit Enquiry' }]}
       />
 
-      <Box className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Box className="lg:col-span-2 flex flex-col gap-6">
-          {/* Delivery */}
-          <Box sx={{ borderRadius: 4, border: '1px solid var(--ink-200)', bgcolor: '#fff', p: { xs: 2, md: 3 } }}>
-            <Typography variant="h6" sx={{ fontSize: 17, mb: 2 }}>
-              Billing & pickup
-            </Typography>
-            <Box className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-3">
-              <TextField label="Business name" value={user?.companyName ?? ''} size="small" slotProps={{ input: { readOnly: true } }} />
-              <TextField label="GST number" value={user?.gstNumber ?? ''} size="small" slotProps={{ input: { readOnly: true } }} />
-            </Box>
-            <TextField
-              label="Delivery address"
-              value={address}
-              onChange={(e) => setAddress(e.target.value)}
-              fullWidth
-              multiline
-              minRows={2}
-            />
-          </Box>
-        </Box>
-
+      <Box sx={{ maxWidth: 640, mx: 'auto', display: 'flex', flexDirection: 'column', gap: 3 }}>
+        <OrderSummary items={items} />
         <Box>
-          <OrderSummary items={items} />
           <Button
             variant="contained"
             size="large"
             fullWidth
-            sx={{ mt: 2 }}
             disabled={placing}
             startIcon={placing ? <CircularProgress size={18} color="inherit" /> : <CheckCircleRoundedIcon />}
             onClick={placeOrder}
